@@ -1,0 +1,118 @@
+{
+  "name": "project-welcome-page",
+  "displayName": "Project Welcome Page",
+  "description": "Custom welcome page for Visual Studio Code with persistent project groups, recent items, drag-and-drop organization, and startup integration.",
+  "version": "0.0.1",
+  "publisher": "antoniocambule",
+  "author": {
+    "name": "Antonio Cambule"
+  },
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.116.0"
+  },
+  "keywords": [
+    "welcome",
+    "projects",
+    "workspace",
+    "recent",
+    "startup",
+    "drag-and-drop"
+  ],
+  "categories": [
+    "Productivity",
+    "Other"
+  ],
+  "activationEvents": [
+    "*",
+    "onView:projectWelcome.projects",
+    "onCommand:projectWelcome.openStartPage",
+    "onCommand:projectWelcome.createProject",
+    "onCommand:projectWelcome.createGroup",
+    "onCommand:projectWelcome.backupProjects"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "projectWelcome.openStartPage",
+        "title": "Project Welcome: Open Start Page"
+      },
+      {
+        "command": "projectWelcome.createProject",
+        "title": "Project Welcome: New Project"
+      },
+      {
+        "command": "projectWelcome.createGroup",
+        "title": "Project Welcome: New Group"
+      },
+      {
+        "command": "projectWelcome.backupProjects",
+        "title": "Project Welcome: Backup Projects"
+      },
+      {
+        "command": "projectWelcome.refreshProjects",
+        "title": "Project Welcome: Refresh Projects"
+      }
+    ],
+    "configuration": {
+      "title": "Project Welcome",
+      "properties": {
+        "projectWelcome.openOnStartup": {
+          "type": "boolean",
+          "default": true,
+          "description": "Open the custom Project Welcome page automatically after VS Code starts."
+        },
+        "projectWelcome.layout": {
+          "type": "string",
+          "default": "balanced",
+          "enum": [
+            "balanced",
+            "tallProjectsRight",
+            "tallProjectsLeft"
+          ],
+          "enumDescriptions": [
+            "Balanced layout with Start on the left and Projects on the right.",
+            "Tall project layout with Start and Recent stacked on the left and Projects taking the full right column.",
+            "Tall project layout with Projects taking the full left column and Start and Recent stacked on the right."
+          ],
+          "description": "Select which layout variant the custom Project Welcome page should use."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "projectWelcome",
+          "title": "Projects",
+          "icon": "media/projects.svg"
+        }
+      ]
+    },
+    "views": {
+      "projectWelcome": [
+        {
+          "type": "webview",
+          "id": "projectWelcome.projects",
+          "name": "Welcome"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "watch": "tsc -watch -p .",
+    "package": "npm run package:local",
+    "package:local": "node scripts/package-local.mjs",
+    "check": "tsc -p . --noEmit"
+  },
+  "devDependencies": {
+    "@vscode/vsce": "^3.6.2",
+    "@types/node": "^24.0.0",
+    "@types/vscode": "^1.116.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@vscode/codicons": "^0.0.45"
+  }
+}
