@@ -65,14 +65,15 @@ Die erzeugte Datei kann anschliessend in VS Code ueber `Extensions: Install from
 
 ## Rolling VSIX Build On Main
 
-Bei jedem Push auf `main` erzeugt GitHub Actions automatisch eine Rolling-VSIX und laedt sie als Workflow-Artefakt hoch.
+Bei jedem Push auf `main` erzeugt GitHub Actions automatisch eine Rolling-VSIX, laedt sie als Workflow-Artefakt hoch und aktualisiert zusaetzlich ein festes GitHub Pre-Release fuer Testzwecke.
 
 Eigenschaften:
 
-- kein offizielles GitHub Release
+- GitHub Pre-Release als dauerhafter Test-Kanal
 - keine Marketplace-Veroeffentlichung
 - keine dauerhafte Aenderung an der `package.json` im Repository
 - Vorab-Version im Format `x.y.z-main.<run-number>`
+- immer eine stabile Download-Datei im Pre-Release: `project-welcome-page-rolling-latest.vsix`
 
 Lokal kannst du denselben Typ Build auch manuell erzeugen:
 
@@ -81,6 +82,11 @@ npm run package:ci
 ```
 
 Die Rolling-VSIX landet dann unter `artifacts/vsix/rolling/`.
+
+Online findest du sie anschliessend an zwei Stellen:
+
+- unter `Actions` als Workflow-Artefakt des jeweiligen Runs
+- unter `Releases` als stets aktualisiertes Pre-Release `Rolling Build`
 
 ## Official Release Build
 

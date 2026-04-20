@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
@@ -17,6 +17,7 @@ const extensionName = packageJson.name;
 const baseVersion = String(packageJson.version);
 const rollingVersion = createRollingVersion(baseVersion);
 const outputFile = path.join(outputDir, `${extensionName}-${rollingVersion}.vsix`);
+const latestAliasFile = path.join(outputDir, `${extensionName}-rolling-latest.vsix`);
 
 packageJson.version = rollingVersion;
 await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`, "utf8");
@@ -38,6 +39,8 @@ try {
   );
 
   console.log(`Rolling VSIX erstellt: ${outputFile}`);
+  await copyFile(outputFile, latestAliasFile);
+  console.log(`Rolling VSIX Alias aktualisiert: ${latestAliasFile}`);
 } finally {
   await writeFile(packageJsonPath, originalPackageJsonText, "utf8");
 }

@@ -6,7 +6,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-rolling-vsix:
@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
@@ -29,8 +29,27 @@ jobs:
         run: npm run package:ci
 
       - name: Upload rolling VSIX artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: rolling-vsix-${{ github.run_number }}
           path: artifacts/vsix/rolling/*.vsix
           if-no-files-found: error
+
+      - name: Update rolling pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: rolling
+          name: Rolling Build
+          prerelease: true
+          make_latest: false
+          generate_release_notes: false
+          body: |
+            This is the continuously updated rolling build from the `main` branch.
+
+            It is intended for testing and preview purposes and is not an official stable release.
+
+            Source branch: `main`
+            Workflow run: `${{ github.run_number }}`
+            Commit: `${{ github.sha }}`
+          files: artifacts/vsix/rolling/*rolling-latest.vsix
+          overwrite_files: true
