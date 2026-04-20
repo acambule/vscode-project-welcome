@@ -21,9 +21,31 @@ Created by Antonio Cambule.
 ```bash
 npm install
 npm run build
+npm run install:hooks
 ```
 
 Danach das Projekt in VS Code oeffnen und `F5` starten.
+
+## Automatic Version Bump
+
+Dieses Projekt kann die Patch-Version in `package.json` automatisch bei jedem Commit erhoehen.
+
+Einmalig aktivieren:
+
+```bash
+npm run install:hooks
+```
+
+Danach fuehrt der `pre-commit` Hook vor jedem Commit automatisch aus:
+
+- Patch-Version erhoehen, zum Beispiel `0.0.1` -> `0.0.2`
+- `package.json` erneut zum Commit hinzufuegen
+
+Wenn du den Automatismus in einem Einzelfall ueberspringen willst:
+
+```bash
+SKIP_VERSION_BUMP=1 git commit -m "..."
+```
 
 ## Local Packaging
 
@@ -41,13 +63,54 @@ Das Skript:
 
 Die erzeugte Datei kann anschliessend in VS Code ueber `Extensions: Install from VSIX...` installiert werden.
 
+## Rolling VSIX Build On Main
+
+Bei jedem Push auf `main` erzeugt GitHub Actions automatisch eine Rolling-VSIX und laedt sie als Workflow-Artefakt hoch.
+
+Eigenschaften:
+
+- kein offizielles GitHub Release
+- keine Marketplace-Veroeffentlichung
+- keine dauerhafte Aenderung an der `package.json` im Repository
+- Vorab-Version im Format `x.y.z-main.<run-number>`
+
+Lokal kannst du denselben Typ Build auch manuell erzeugen:
+
+```bash
+npm run package:ci
+```
+
+Die Rolling-VSIX landet dann unter `artifacts/vsix/rolling/`.
+
+## Official Release Build
+
+Ein offizielles GitHub Release wird erzeugt, sobald du einen Versions-Tag im Format `vX.Y.Z` auf den Remote pushst.
+
+Beispiel:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+Dabei gilt:
+
+- der Tag muss exakt zur `version` in `package.json` passen
+- es wird eine normale VSIX mit der stabilen Versionsnummer gebaut
+- die VSIX wird als Workflow-Artefakt hochgeladen
+- zusaetzlich wird ein GitHub Release mit angehaengter VSIX erstellt
+
+Wenn `package.json` zum Beispiel `0.1.0` enthaelt, dann muss der Tag `v0.1.0` sein.
+
 ## Publishing Preparation
 
-Das Projekt ist fuer eine spaetere GitHub-Repository-Verknuepfung und Marketplace-Veroeffentlichung vorbereitet.
+Das Projekt ist fuer GitHub und eine spaetere Marketplace-Veroeffentlichung vorbereitet.
 
 Noch spaeter zu ergaenzen:
 
-- `repository`
-- `homepage`
-- `bugs`
 - optional ein Marketplace-Icon
+
+## Links
+
+- Repository: https://github.com/acambule/vscode-project-welcome
+- Issues: https://github.com/acambule/vscode-project-welcome/issues

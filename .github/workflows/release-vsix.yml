@@ -1,0 +1,45 @@
+name: Release VSIX
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-release-vsix:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify tag matches package.json version
+        run: node scripts/verify-release-tag.mjs
+
+      - name: Build release VSIX
+        run: npm run package:release
+
+      - name: Upload release VSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-vsix-${{ github.ref_name }}
+          path: artifacts/vsix/*.vsix
+          if-no-files-found: error
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: artifacts/vsix/*.vsix

@@ -1,5 +1,7 @@
 .codex
 .gitignore
+.githooks/**
+.github/**
 .vscode/**
 scripts/**
 artifacts/**

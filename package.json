@@ -2,12 +2,20 @@
   "name": "project-welcome-page",
   "displayName": "Project Welcome Page",
   "description": "Custom welcome page for Visual Studio Code with persistent project groups, recent items, drag-and-drop organization, and startup integration.",
-  "version": "0.0.1",
+  "version": "1.0.1",
   "publisher": "antoniocambule",
   "author": {
     "name": "Antonio Cambule"
   },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/acambule/vscode-project-welcome.git"
+  },
+  "homepage": "https://github.com/acambule/vscode-project-welcome#readme",
+  "bugs": {
+    "url": "https://github.com/acambule/vscode-project-welcome/issues"
+  },
   "engines": {
     "vscode": "^1.116.0"
   },
@@ -23,6 +31,7 @@
     "Productivity",
     "Other"
   ],
+  "icon": "media/extension-icon.png",
   "activationEvents": [
     "*",
     "onView:projectWelcome.projects",
@@ -104,7 +113,10 @@
     "watch": "tsc -watch -p .",
     "package": "npm run package:local",
     "package:local": "node scripts/package-local.mjs",
-    "check": "tsc -p . --noEmit"
+    "package:ci": "node scripts/package-ci.mjs",
+    "package:release": "node scripts/package-local.mjs",
+    "check": "tsc -p . --noEmit",
+    "install:hooks": "sh scripts/install-git-hooks.sh"
   },
   "devDependencies": {
     "@vscode/vsce": "^3.6.2",
