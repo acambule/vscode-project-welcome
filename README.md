@@ -102,11 +102,24 @@ git push origin v0.1.0
 Dabei gilt:
 
 - der Tag muss exakt zur `version` in `package.json` passen
+- die Release Notes werden aus `CHANGELOG.md` fuer genau diese Version gelesen
 - es wird eine normale VSIX mit der stabilen Versionsnummer gebaut
 - die VSIX wird als Workflow-Artefakt hochgeladen
 - zusaetzlich wird ein GitHub Release mit angehaengter VSIX erstellt
 
 Wenn `package.json` zum Beispiel `0.1.0` enthaelt, dann muss der Tag `v0.1.0` sein.
+
+## Changelog
+
+Release-Versionen werden ueber `CHANGELOG.md` gepflegt.
+
+Fuer jede stabile Version braucht es einen Abschnitt im Format:
+
+```md
+## [1.0.3] - 2026-04-20
+```
+
+Der Release-Workflow verwendet genau diesen Abschnitt als GitHub-Release-Text.
 
 ## Publishing Preparation
 

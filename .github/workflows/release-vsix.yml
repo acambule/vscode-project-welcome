@@ -28,6 +28,10 @@ jobs:
       - name: Verify tag matches package.json version
         run: node scripts/verify-release-tag.mjs
 
+      - name: Extract release notes from CHANGELOG
+        id: changelog
+        run: npm run release:notes
+
       - name: Build release VSIX
         run: npm run package:release
 
@@ -41,5 +45,5 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
+          body_path: ${{ steps.changelog.outputs.release_notes_path }}
           files: artifacts/vsix/*.vsix

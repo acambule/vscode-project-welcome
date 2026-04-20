@@ -115,6 +115,7 @@
     "package:local": "node scripts/package-local.mjs",
     "package:ci": "node scripts/package-ci.mjs",
     "package:release": "node scripts/package-local.mjs",
+    "release:notes": "node scripts/extract-changelog-release.mjs",
     "check": "tsc -p . --noEmit",
     "install:hooks": "sh scripts/install-git-hooks.sh"
   },
