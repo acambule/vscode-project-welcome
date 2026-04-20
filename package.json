@@ -2,7 +2,7 @@
   "name": "project-welcome-page",
   "displayName": "Project Welcome Page",
   "description": "Custom welcome page for Visual Studio Code with persistent project groups, recent items, drag-and-drop organization, and startup integration.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "publisher": "antoniocambule",
   "author": {
     "name": "Antonio Cambule"
@@ -109,7 +109,7 @@
     }
   },
   "scripts": {
-    "build": "tsc -p .",
+    "build": "npm run sync:codicons && tsc -p .",
     "watch": "tsc -watch -p .",
     "package": "npm run package:local",
     "package:local": "node scripts/package-local.mjs",
@@ -117,7 +117,8 @@
     "package:release": "node scripts/package-local.mjs",
     "release:notes": "node scripts/extract-changelog-release.mjs",
     "check": "tsc -p . --noEmit",
-    "install:hooks": "sh scripts/install-git-hooks.sh"
+    "install:hooks": "sh scripts/install-git-hooks.sh",
+    "sync:codicons": "node scripts/sync-codicons.mjs"
   },
   "devDependencies": {
     "@vscode/vsce": "^3.6.2",

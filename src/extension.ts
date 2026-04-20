@@ -157,7 +157,7 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
 
   private getHtml(webview: vscode.Webview): string {
     const nonce = getNonce();
-    const codiconCssUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "node_modules", "@vscode", "codicons", "dist", "codicon.css"));
+    const codiconCssUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, "media", "codicon.css"));
     const csp = [
       "default-src 'none'",
       `style-src ${webview.cspSource} 'unsafe-inline'`,
@@ -1027,7 +1027,7 @@ async function postProjectsToWebview(
 
 function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): string {
   const nonce = getNonce();
-  const codiconCssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "node_modules", "@vscode", "codicons", "dist", "codicon.css"));
+  const codiconCssUri = webview.asWebviewUri(vscode.Uri.joinPath(extensionUri, "media", "codicon.css"));
   const csp = [
     "default-src 'none'",
     `style-src ${webview.cspSource} 'unsafe-inline'`,

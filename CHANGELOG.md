@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and follows semantic versioning.
 
+## [1.0.4] - 2026-04-20
+
+### Fixed
+
+- Bundled Codicons directly into the extension package so icons render correctly in the installed VSIX
+- Added migration support for previously stored project data from earlier extension storage locations
+
 ## [1.0.3] - 2026-04-20
 
 ### Added
