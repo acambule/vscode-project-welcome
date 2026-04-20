@@ -7,6 +7,7 @@ Created by Antonio Cambule.
 ## Features
 
 - Eigene Startseite als Webview-Panel, optional automatisch beim Start
+- Optionaler Keyboard Shortcut zum Oeffnen der Welcome Page
 - Seitenleistenansicht fuer Projekte
 - Projektgruppen mit mehreren Projekten
 - Projekte mit Name, Beschreibung und Zielpfad
@@ -25,6 +26,25 @@ npm run install:hooks
 ```
 
 Danach das Projekt in VS Code oeffnen und `F5` starten.
+
+## Keyboard Shortcut
+
+Die Extension bringt einen optionalen Standard-Shortcut fuer das Oeffnen der Welcome Page mit.
+
+Setting:
+
+```json
+"projectWelcome.enableOpenStartPageKeybinding": true
+```
+
+Standard-Shortcut bei aktivem Setting:
+
+- Windows / Linux: `Shift+F1`
+- macOS: `Shift+F1`
+
+Der Befehl kann ausserdem jederzeit in den normalen VS Code Tastenkombinationen ueberschrieben werden:
+
+- `Project Welcome: Open Start Page`
 
 ## Automatic Version Bump
 

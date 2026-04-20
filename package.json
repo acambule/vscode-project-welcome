@@ -2,8 +2,8 @@
   "name": "project-welcome-page",
   "displayName": "Project Welcome Page",
   "description": "Custom welcome page for Visual Studio Code with persistent project groups, recent items, drag-and-drop organization, and startup integration.",
-  "version": "1.0.4",
-  "publisher": "antoniocambule",
+  "version": "1.0.5",
+  "publisher": "Antonio Cambule",
   "author": {
     "name": "Antonio Cambule"
   },
@@ -64,6 +64,14 @@
         "title": "Project Welcome: Refresh Projects"
       }
     ],
+    "keybindings": [
+      {
+        "command": "projectWelcome.openStartPage",
+        "key": "shift+f1",
+        "mac": "shift+f1",
+        "when": "config.projectWelcome.enableOpenStartPageKeybinding"
+      }
+    ],
     "configuration": {
       "title": "Project Welcome",
       "properties": {
@@ -71,6 +79,11 @@
           "type": "boolean",
           "default": true,
           "description": "Open the custom Project Welcome page automatically after VS Code starts."
+        },
+        "projectWelcome.enableOpenStartPageKeybinding": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable the default keyboard shortcut for opening the Project Welcome page."
         },
         "projectWelcome.layout": {
           "type": "string",
