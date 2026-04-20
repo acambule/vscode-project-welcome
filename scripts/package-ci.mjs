@@ -41,6 +41,9 @@ try {
   console.log(`Rolling VSIX erstellt: ${outputFile}`);
   await copyFile(outputFile, latestAliasFile);
   console.log(`Rolling VSIX Alias aktualisiert: ${latestAliasFile}`);
+  await writeGithubOutput("rolling_version", rollingVersion);
+  await writeGithubOutput("rolling_file", outputFile);
+  await writeGithubOutput("rolling_alias_file", latestAliasFile);
 } finally {
   await writeFile(packageJsonPath, originalPackageJsonText, "utf8");
 }
@@ -85,4 +88,13 @@ function run(command, args, cwd) {
 
     child.on("error", reject);
   });
+}
+
+async function writeGithubOutput(name, value) {
+  const outputPath = process.env.GITHUB_OUTPUT;
+  if (!outputPath) {
+    return;
+  }
+
+  await writeFile(outputPath, `${name}=${value}\n`, { encoding: "utf8", flag: "a" });
 }

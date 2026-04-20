@@ -26,6 +26,7 @@ jobs:
         run: npm ci
 
       - name: Build rolling VSIX
+        id: build_rolling
         run: npm run package:ci
 
       - name: Upload rolling VSIX artifact
@@ -48,6 +49,7 @@ jobs:
 
             It is intended for testing and preview purposes and is not an official stable release.
 
+            Rolling version: `${{ steps.build_rolling.outputs.rolling_version }}`
             Source branch: `main`
             Workflow run: `${{ github.run_number }}`
             Commit: `${{ github.sha }}`
