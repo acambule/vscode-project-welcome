@@ -1140,16 +1140,6 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
       font: inherit;
     }
 
-    .selectWrap {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: auto;
-      color: var(--muted);
-      font-size: 12px;
-      white-space: nowrap;
-    }
-
     select {
       appearance: none;
       border: 1px solid var(--border);
@@ -1167,6 +1157,56 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
         calc(100% - 12px) calc(50% - 2px);
       background-size: 6px 6px, 6px 6px;
       background-repeat: no-repeat;
+    }
+
+    .layoutSelectWrap {
+      display: inline-flex;
+      align-items: center;
+      position: relative;
+    }
+
+    .layoutSelect {
+      min-width: 138px;
+      padding: 5px 28px 5px 10px;
+      border-radius: 8px;
+      background-color: color-mix(in srgb, var(--bg) 76%, transparent);
+      font-size: 12px;
+      line-height: 1.2;
+      color: var(--muted);
+      background-position:
+        calc(100% - 16px) calc(50% - 2px),
+        calc(100% - 11px) calc(50% - 2px);
+      background-size: 5px 5px, 5px 5px;
+    }
+
+    .layoutSelect:hover,
+    .layoutSelect:focus {
+      color: var(--fg);
+      border-color: color-mix(in srgb, var(--link) 35%, var(--border));
+      outline: none;
+    }
+
+    .layoutHint {
+      position: absolute;
+      left: 50%;
+      bottom: calc(100% + 8px);
+      transform: translateX(-50%);
+      padding: 4px 7px;
+      border-radius: 6px;
+      background: color-mix(in srgb, var(--bg) 92%, black 8%);
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 120ms ease;
+      border: 1px solid color-mix(in srgb, var(--border) 85%, transparent);
+    }
+
+    .layoutSelectWrap:hover .layoutHint,
+    .layoutSelectWrap:focus-within .layoutHint {
+      opacity: 1;
     }
 
     button.secondary {
@@ -1434,6 +1474,20 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
       border-color: color-mix(in srgb, var(--danger) 40%, transparent);
     }
 
+    .bottomBar {
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: color-mix(in srgb, var(--bg) 86%, transparent);
+      padding: 6px 10px;
+      border-radius: 10px;
+    }
+
     .toggle {
       display: inline-flex;
       align-items: center;
@@ -1443,13 +1497,7 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
       user-select: none;
       cursor: pointer;
       position: fixed;
-      left: 50%;
-      bottom: 18px;
-      transform: translateX(-50%);
-      z-index: 10;
-      background: color-mix(in srgb, var(--bg) 86%, transparent);
-      padding: 6px 10px;
-      border-radius: 10px;
+      position: static;
     }
 
     .toggle input {
@@ -1635,10 +1683,6 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
         bottom: 12px;
       }
 
-      .selectWrap {
-        margin-left: 0;
-      }
-
       .leftRail {
         gap: 36px;
       }
@@ -1663,14 +1707,6 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
         <div class="actions">
           <button id="backup" class="accent">Backup</button>
           <button id="refresh" class="secondary">Aktualisieren</button>
-          <label class="selectWrap" for="layoutSelect">
-            <span>Layout</span>
-            <select id="layoutSelect">
-              <option value="balanced">Klassisch</option>
-              <option value="tallProjectsRight">Projekte rechts</option>
-              <option value="tallProjectsLeft">Projekte links</option>
-            </select>
-          </label>
         </div>
         <div class="storage" id="storagePath"></div>
       </section>
@@ -1726,10 +1762,20 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
       </section>
     </section>
   </main>
-  <label class="toggle">
-    <input id="startupToggle" type="checkbox" />
-    <span>Show welcome page on startup</span>
-  </label>
+  <div class="bottomBar">
+    <label class="toggle">
+      <input id="startupToggle" type="checkbox" />
+      <span>Show welcome page on startup</span>
+    </label>
+    <label class="layoutSelectWrap" for="layoutSelect">
+      <span class="layoutHint">Layout</span>
+      <select id="layoutSelect" class="layoutSelect" title="Layout">
+        <option value="balanced">Klassisch</option>
+        <option value="tallProjectsRight">Projekte rechts</option>
+        <option value="tallProjectsLeft">Projekte links</option>
+      </select>
+    </label>
+  </div>
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
     const primaryProjectList = document.getElementById("projectList");
