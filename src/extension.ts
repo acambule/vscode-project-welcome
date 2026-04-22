@@ -52,6 +52,8 @@ interface ExtensionUiMeta {
   shortcutEnabled: boolean;
 }
 
+const startPageViewType = "projectWelcome.startPage";
+
 class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "projectWelcome.projects";
 
@@ -517,6 +519,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(ProjectsWelcomeViewProvider.viewType, provider)
   );
+  context.subscriptions.push(
+    vscode.window.registerWebviewPanelSerializer(startPageViewType, {
+      async deserializeWebviewPanel(webviewPanel: vscode.WebviewPanel): Promise<void> {
+        attachStartPagePanel(webviewPanel, panelRef, context, store);
+      }
+    })
+  );
 
   context.subscriptions.push(
     vscode.commands.registerCommand("projectWelcome.openStartPage", async () => {
@@ -542,7 +551,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  if (vscode.workspace.getConfiguration("projectWelcome").get<boolean>("openOnStartup", true)) {
+  if (
+    vscode.workspace.getConfiguration("projectWelcome").get<boolean>("openOnStartup", true)
+    && !hasStartPageTabOpen()
+  ) {
     panelRef.current = createOrRevealStartPage(panelRef, context, store, true);
   }
 }
@@ -913,7 +925,7 @@ function createOrRevealStartPage(
   context: vscode.ExtensionContext,
   store: ProjectStore,
   preserveFocus = false
-): vscode.WebviewPanel {
+): vscode.WebviewPanel | undefined {
   const existingPanel = panelRef.current;
   if (existingPanel) {
     existingPanel.reveal(vscode.ViewColumn.Active, preserveFocus);
@@ -921,8 +933,12 @@ function createOrRevealStartPage(
     return existingPanel;
   }
 
+  if (hasStartPageTabOpen()) {
+    return undefined;
+  }
+
   const panel = vscode.window.createWebviewPanel(
-    "projectWelcome.startPage",
+    startPageViewType,
     "Welcome",
     vscode.ViewColumn.Active,
     {
@@ -934,7 +950,23 @@ function createOrRevealStartPage(
     }
   );
 
+  return attachStartPagePanel(panel, panelRef, context, store);
+}
+
+function attachStartPagePanel(
+  panel: vscode.WebviewPanel,
+  panelRef: { current: vscode.WebviewPanel | undefined },
+  context: vscode.ExtensionContext,
+  store: ProjectStore
+): vscode.WebviewPanel {
+  panelRef.current = panel;
   panel.iconPath = vscode.Uri.joinPath(context.extensionUri, "media", "vscode-welcome.svg");
+  panel.webview.options = {
+    enableScripts: true,
+    localResourceRoots: [
+      context.extensionUri
+    ]
+  };
   panel.webview.html = getStartPageHtml(panel.webview, context.extensionUri);
   panel.webview.onDidReceiveMessage(async (message: WebviewRequest) => {
     await handleSharedMessage(message, context, store, panel);
@@ -952,6 +984,13 @@ function createOrRevealStartPage(
 
   void postProjectsToPanel(panel, context, store);
   return panel;
+}
+
+function hasStartPageTabOpen(): boolean {
+  return vscode.window.tabGroups.all.some((group) => group.tabs.some((tab) => {
+    const input = tab.input;
+    return input instanceof vscode.TabInputWebview && input.viewType === startPageViewType;
+  }));
 }
 
 async function handleSharedMessage(
