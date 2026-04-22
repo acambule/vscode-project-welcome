@@ -7,6 +7,7 @@ import { ProjectStore } from "./storage";
 
 type WebviewRequest =
   | { type: "ready" }
+  | { type: "openStartPage" }
   | { type: "createProject"; groupId?: string }
   | { type: "createGroup" }
   | { type: "renameGroup"; groupId: string }
@@ -100,6 +101,9 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
       case "ready":
       case "refreshProjects":
         await this.postProjects();
+        break;
+      case "openStartPage":
+        await vscode.commands.executeCommand("projectWelcome.openStartPage");
         break;
       case "createProject":
         await createOrEditProject(this.store, undefined, message.groupId);
@@ -245,6 +249,7 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
     button.accent {
       background: color-mix(in srgb, var(--accent) 85%, white 15%);
       color: var(--accent-fg);
+      box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 24%, transparent);
     }
 
     button.icon {
@@ -356,6 +361,7 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
 <body>
   <div class="shell">
     <section class="actions">
+      <button id="openStartPage" class="accent">Als Startseite oeffnen</button>
       <button id="create">Neues Projekt</button>
       <button id="createGroup" class="secondary">Neue Gruppe</button>
       <button id="backup" class="secondary">Backup</button>
@@ -377,6 +383,9 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
     const storagePath = document.getElementById("storagePath");
     const shortcutInfo = document.getElementById("shortcutInfo");
 
+    document.getElementById("openStartPage").addEventListener("click", () => {
+      vscode.postMessage({ type: "openStartPage" });
+    });
     document.getElementById("create").addEventListener("click", () => {
       vscode.postMessage({ type: "createProject" });
     });
@@ -553,7 +562,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  if (vscode.workspace.getConfiguration("projectWelcome").get<boolean>("openOnStartup", true)) {
+  if (
+    vscode.workspace.getConfiguration("projectWelcome").get<boolean>("openOnStartup", true)
+    && shouldOpenStartPageOnStartup()
+  ) {
     void openStartPageOnStartup(panelRef, context, store);
   }
 
@@ -1010,6 +1022,9 @@ async function handleSharedMessage(
     case "ready":
     case "refreshProjects":
       await postProjectsToPanel(panel, context, store);
+      break;
+    case "openStartPage":
+      await vscode.commands.executeCommand("projectWelcome.openStartPage");
       break;
     case "createProject":
       await createOrEditProject(store, undefined, message.groupId);
@@ -2669,6 +2684,14 @@ function getStartPageTabs(): vscode.Tab[] {
     const input = tab.input;
     return input instanceof vscode.TabInputWebview && input.viewType === startPageViewType;
   }));
+}
+
+function shouldOpenStartPageOnStartup(): boolean {
+  if (vscode.workspace.workspaceFile) {
+    return false;
+  }
+
+  return !vscode.workspace.workspaceFolders?.length;
 }
 
 async function reconcileStartPageTabs(
