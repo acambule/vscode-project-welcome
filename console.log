@@ -1,0 +1,17 @@
+
+(node:34577) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `exe --trace-deprecation ...` to show where the warning was created)
+(node:34577) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+[INFO] 2026-04-22T06:25:27.212Z - Translations initialized.
+[INFO] 2026-04-22T06:25:27.214Z - Extension activated!
+Dotenv is active
+Set file associations
+Load autocompletion
+Load commands
+Load secret peeking
+Load autocloaking
+(node:34782) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `exe --trace-deprecation ...` to show where the warning was created)
+(node:34782) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+[INFO] 2026-04-22T06:25:43.319Z - Translations initialized.
+[INFO] 2026-04-22T06:25:43.321Z - Extension activated!

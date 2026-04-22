@@ -2,7 +2,7 @@
   "name": "project-welcome-page",
   "displayName": "Project Welcome Page",
   "description": "Custom welcome page for Visual Studio Code with persistent project groups, recent items, drag-and-drop organization, and startup integration.",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "publisher": "antonio-cambule",
   "author": {
     "name": "Antonio Cambule"
@@ -35,7 +35,6 @@
   "activationEvents": [
     "*",
     "onView:projectWelcome.projects",
-    "onWebviewPanel:projectWelcome.startPage",
     "onCommand:projectWelcome.openStartPage",
     "onCommand:projectWelcome.createProject",
     "onCommand:projectWelcome.createGroup",

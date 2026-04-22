@@ -53,6 +53,7 @@ interface ExtensionUiMeta {
 }
 
 const startPageViewType = "projectWelcome.startPage";
+const startPageOpenStateKey = "projectWelcome.startPageOpen";
 
 class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "projectWelcome.projects";
@@ -515,15 +516,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const store = new ProjectStore(context);
   const provider = new ProjectsWelcomeViewProvider(context, context.extensionUri, store);
   const panelRef: { current: vscode.WebviewPanel | undefined } = { current: undefined };
+  let isReconcilingStartPageTabs = false;
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(ProjectsWelcomeViewProvider.viewType, provider)
   );
   context.subscriptions.push(
-    vscode.window.registerWebviewPanelSerializer(startPageViewType, {
-      async deserializeWebviewPanel(webviewPanel: vscode.WebviewPanel): Promise<void> {
-        attachStartPagePanel(webviewPanel, panelRef, context, store);
-      }
+    vscode.window.tabGroups.onDidChangeTabs(() => {
+      void reconcileStartPageTabs(panelRef, context, isReconcilingStartPageTabs, (nextValue) => {
+        isReconcilingStartPageTabs = nextValue;
+      });
     })
   );
 
@@ -554,6 +556,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   if (vscode.workspace.getConfiguration("projectWelcome").get<boolean>("openOnStartup", true)) {
     void openStartPageOnStartup(panelRef, context, store);
   }
+
+  void reconcileStartPageTabs(panelRef, context, isReconcilingStartPageTabs, (nextValue) => {
+    isReconcilingStartPageTabs = nextValue;
+  });
 }
 
 export function deactivate(): void {
@@ -958,6 +964,7 @@ function attachStartPagePanel(
   store: ProjectStore
 ): vscode.WebviewPanel {
   panelRef.current = panel;
+  void setStartPageOpenState(context, true);
   panel.iconPath = vscode.Uri.joinPath(context.extensionUri, "media", "vscode-welcome.svg");
   panel.webview.options = {
     enableScripts: true,
@@ -978,6 +985,8 @@ function attachStartPagePanel(
     if (panelRef.current === panel) {
       panelRef.current = undefined;
     }
+
+    void setStartPageOpenState(context, false);
   });
 
   void postProjectsToPanel(panel, context, store);
@@ -2636,7 +2645,8 @@ async function openStartPageOnStartup(
   context: vscode.ExtensionContext,
   store: ProjectStore
 ): Promise<void> {
-  await delay(350);
+  const wasOpenPreviously = context.workspaceState.get<boolean>(startPageOpenStateKey, false);
+  await delay(wasOpenPreviously ? 1600 : 350);
 
   if (panelRef.current || hasStartPageTabOpen()) {
     return;
@@ -2659,6 +2669,43 @@ function getStartPageTabs(): vscode.Tab[] {
     const input = tab.input;
     return input instanceof vscode.TabInputWebview && input.viewType === startPageViewType;
   }));
+}
+
+async function reconcileStartPageTabs(
+  panelRef: { current: vscode.WebviewPanel | undefined },
+  context: vscode.ExtensionContext,
+  isReconciling: boolean,
+  setReconciling: (value: boolean) => void
+): Promise<void> {
+  if (isReconciling) {
+    return;
+  }
+
+  const tabs = getStartPageTabs();
+  if (tabs.length <= 1) {
+    await setStartPageOpenState(context, tabs.length === 1 || Boolean(panelRef.current));
+    return;
+  }
+
+  setReconciling(true);
+
+  try {
+    const activeTab = tabs.find((tab) => tab.isActive);
+    const tabToKeep = activeTab ?? tabs[tabs.length - 1];
+    const tabsToClose = tabs.filter((tab) => tab !== tabToKeep);
+
+    if (tabsToClose.length) {
+      await vscode.window.tabGroups.close(tabsToClose, true);
+    }
+
+    await setStartPageOpenState(context, true);
+  } finally {
+    setReconciling(false);
+  }
+}
+
+async function setStartPageOpenState(context: vscode.ExtensionContext, isOpen: boolean): Promise<void> {
+  await context.workspaceState.update(startPageOpenStateKey, isOpen);
 }
 
 function delay(milliseconds: number): Promise<void> {
