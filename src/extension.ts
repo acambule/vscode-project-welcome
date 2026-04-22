@@ -1,4 +1,7 @@
 import * as vscode from "vscode";
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
 import { ProjectEntry, ProjectGroup, ProjectTargetType } from "./models";
 import { ProjectStore } from "./storage";
 
@@ -43,12 +46,19 @@ interface RecentCollections {
   files: RecentEntry[];
 }
 
+interface ExtensionUiMeta {
+  version: string;
+  shortcutLabel: string;
+  shortcutEnabled: boolean;
+}
+
 class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "projectWelcome.projects";
 
   private view?: vscode.WebviewView;
 
   public constructor(
+    private readonly context: vscode.ExtensionContext,
     private readonly extensionUri: vscode.Uri,
     private readonly store: ProjectStore
   ) {}
@@ -152,7 +162,7 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
       return;
     }
 
-    await postProjectsToWebview(this.view.webview, this.store);
+    await postProjectsToWebview(this.view.webview, this.context, this.store);
   }
 
   private getHtml(webview: vscode.Webview): string {
@@ -247,6 +257,20 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
       overflow-wrap: anywhere;
     }
 
+    .footer {
+      display: grid;
+      gap: 4px;
+      padding-top: 2px;
+      font-size: 11px;
+      line-height: 1.45;
+      color: var(--muted);
+    }
+
+    .footer strong {
+      color: var(--fg);
+      font-weight: 600;
+    }
+
     .list {
       display: grid;
       gap: 12px;
@@ -338,12 +362,17 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
     <div class="hint" id="storagePath"></div>
 
     <section class="list" id="projectList"></section>
+
+    <footer class="footer">
+      <div id="shortcutInfo"></div>
+    </footer>
   </div>
 
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
     const list = document.getElementById("projectList");
     const storagePath = document.getElementById("storagePath");
+    const shortcutInfo = document.getElementById("shortcutInfo");
 
     document.getElementById("create").addEventListener("click", () => {
       vscode.postMessage({ type: "createProject" });
@@ -365,8 +394,16 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
       }
 
       storagePath.textContent = "Dauerhafter Speicherort: " + message.payload.storagePath;
+      shortcutInfo.innerHTML = "<strong>Shortcut:</strong> " + escapeHtml(message.payload.shortcutLabel);
       renderProjects(message.payload.groups || []);
     });
+
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
 
     function renderProjects(groups) {
       list.innerHTML = "";
@@ -474,7 +511,7 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   const store = new ProjectStore(context);
-  const provider = new ProjectsWelcomeViewProvider(context.extensionUri, store);
+  const provider = new ProjectsWelcomeViewProvider(context, context.extensionUri, store);
   const panelRef: { current: vscode.WebviewPanel | undefined } = { current: undefined };
 
   context.subscriptions.push(
@@ -488,20 +525,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     vscode.commands.registerCommand("projectWelcome.createProject", async () => {
       await createOrEditProject(store);
       await provider.refresh();
-      await postProjectsToPanel(panelRef.current, store);
+      await postProjectsToPanel(panelRef.current, context, store);
     }),
     vscode.commands.registerCommand("projectWelcome.createGroup", async () => {
       await createGroup(store);
       await provider.refresh();
-      await postProjectsToPanel(panelRef.current, store);
+      await postProjectsToPanel(panelRef.current, context, store);
     }),
     vscode.commands.registerCommand("projectWelcome.backupProjects", async () => {
       await backupProjects(store);
-      await postProjectsToPanel(panelRef.current, store);
+      await postProjectsToPanel(panelRef.current, context, store);
     }),
     vscode.commands.registerCommand("projectWelcome.refreshProjects", async () => {
       await provider.refresh();
-      await postProjectsToPanel(panelRef.current, store);
+      await postProjectsToPanel(panelRef.current, context, store);
     })
   );
 
@@ -880,7 +917,7 @@ function createOrRevealStartPage(
   const existingPanel = panelRef.current;
   if (existingPanel) {
     existingPanel.reveal(vscode.ViewColumn.Active, preserveFocus);
-    void postProjectsToPanel(existingPanel, store);
+    void postProjectsToPanel(existingPanel, context, store);
     return existingPanel;
   }
 
@@ -900,11 +937,11 @@ function createOrRevealStartPage(
   panel.iconPath = vscode.Uri.joinPath(context.extensionUri, "media", "vscode-welcome.svg");
   panel.webview.html = getStartPageHtml(panel.webview, context.extensionUri);
   panel.webview.onDidReceiveMessage(async (message: WebviewRequest) => {
-    await handleSharedMessage(message, store, panel);
+    await handleSharedMessage(message, context, store, panel);
   });
   panel.onDidChangeViewState(async (event) => {
     if (event.webviewPanel.visible) {
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
     }
   });
   panel.onDidDispose(() => {
@@ -913,35 +950,36 @@ function createOrRevealStartPage(
     }
   });
 
-  void postProjectsToPanel(panel, store);
+  void postProjectsToPanel(panel, context, store);
   return panel;
 }
 
 async function handleSharedMessage(
   message: WebviewRequest,
+  context: vscode.ExtensionContext,
   store: ProjectStore,
   panel?: vscode.WebviewPanel
 ): Promise<void> {
   switch (message.type) {
     case "ready":
     case "refreshProjects":
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
       break;
     case "createProject":
       await createOrEditProject(store, undefined, message.groupId);
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
       break;
     case "createGroup":
       await createGroup(store);
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
       break;
     case "renameGroup":
       await renameGroup(store, message.groupId);
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
       break;
     case "updateGroups":
       await store.saveGroups(message.groups);
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
       break;
     case "editProject": {
       const record = await findProject(store, message.id);
@@ -949,34 +987,34 @@ async function handleSharedMessage(
         return;
       }
       await createOrEditProject(store, record.project, record.group.id);
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
       break;
     }
     case "deleteProject":
       await deleteProject(store, message.id);
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
       break;
     case "openProject":
       await openProject(store, message.id);
       break;
     case "backupProjects":
       await backupProjects(store);
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
       break;
     case "toggleStartup":
       await setOpenOnStartupSetting(message.enabled);
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
       break;
     case "setLayout":
       await setWelcomeLayoutSetting(message.layout);
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
       break;
     case "openRecent":
       await openTargetPath(message.path, message.targetType);
       break;
     case "importRecentAsProject":
       await importRecentAsProject(store, message.label, message.path, message.targetType);
-      await postProjectsToPanel(panel, store);
+      await postProjectsToPanel(panel, context, store);
       break;
     case "startAction":
       await executeStartAction(message.action);
@@ -988,27 +1026,33 @@ async function handleSharedMessage(
 
 async function postProjectsToPanel(
   panel: vscode.WebviewPanel | undefined,
+  context: vscode.ExtensionContext,
   store: ProjectStore
 ): Promise<void> {
   if (!panel) {
     return;
   }
 
-  await postProjectsToWebview(panel.webview, store);
+  await postProjectsToWebview(panel.webview, context, store);
 }
 
 async function postProjectsToWebview(
   webview: vscode.Webview,
+  context: vscode.ExtensionContext,
   store: ProjectStore
 ): Promise<void> {
   const groups = await store.listGroups();
+  const uiMeta = await getExtensionUiMeta(context);
   await webview.postMessage({
     type: "projectsData",
     payload: {
       groups,
       storagePath: store.projectsFilePath,
       openOnStartup: getOpenOnStartupSetting(),
-      layout: getWelcomeLayoutSetting()
+      layout: getWelcomeLayoutSetting(),
+      extensionVersion: uiMeta.version,
+      shortcutLabel: uiMeta.shortcutLabel,
+      shortcutEnabled: uiMeta.shortcutEnabled
     }
   });
 
@@ -1486,6 +1530,9 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
       background: color-mix(in srgb, var(--bg) 86%, transparent);
       padding: 6px 10px;
       border-radius: 10px;
+      max-width: min(calc(100vw - 32px), 1100px);
+      flex-wrap: wrap;
+      justify-content: center;
     }
 
     .toggle {
@@ -1651,6 +1698,20 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
       line-height: 1.4;
     }
 
+    .footerMeta {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .footerMeta strong {
+      color: var(--fg);
+      font-weight: 600;
+    }
+
     @media (max-width: 960px) {
       body {
         padding: 64px 28px 110px;
@@ -1775,6 +1836,7 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
         <option value="tallProjectsLeft">Projekte links</option>
       </select>
     </label>
+    <div class="footerMeta" id="footerVersion"></div>
   </div>
   <script nonce="${nonce}">
     const vscode = acquireVsCodeApi();
@@ -1787,6 +1849,7 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
     const layoutSelect = document.getElementById("layoutSelect");
     const createGroupButton = document.getElementById("createGroup");
     const createGroupSecondaryButton = document.getElementById("createGroupSecondary");
+    const footerVersion = document.getElementById("footerVersion");
     let currentGroups = [];
     let activeDrag = null;
     let hasRenderedProjects = false;
@@ -1815,6 +1878,7 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
         storagePath.textContent = storageText;
         startupToggle.checked = Boolean(message.payload.openOnStartup);
         layoutSelect.value = message.payload.layout || "balanced";
+        footerVersion.innerHTML = "<strong>Version:</strong> " + escapeHtml(message.payload.extensionVersion);
         applyLayout(layoutSelect.value);
         currentGroups = cloneGroups(message.payload.groups || []);
         renderProjects(currentGroups);
@@ -2199,6 +2263,13 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
         : primaryProjectList;
     }
 
+    function escapeHtml(value) {
+      return String(value || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
     renderLoadingState();
     applyLayout(layoutSelect.value);
     vscode.postMessage({ type: "ready" });
@@ -2209,6 +2280,173 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
 
 function getOpenOnStartupSetting(): boolean {
   return vscode.workspace.getConfiguration("projectWelcome").get<boolean>("openOnStartup", true);
+}
+
+async function getExtensionUiMeta(context: vscode.ExtensionContext): Promise<ExtensionUiMeta> {
+  const version = String(context.extension.packageJSON.version ?? "unbekannt");
+  const shortcut = await resolveOpenStartPageShortcut(context);
+
+  return {
+    version,
+    shortcutLabel: shortcut,
+    shortcutEnabled: shortcut !== "deaktiviert"
+  };
+}
+
+async function resolveOpenStartPageShortcut(context: vscode.ExtensionContext): Promise<string> {
+  if (!vscode.workspace.getConfiguration("projectWelcome").get<boolean>("enableOpenStartPageKeybinding", false)) {
+    return "deaktiviert";
+  }
+
+  const resolvedUserShortcut = await findConfiguredShortcutForCommand(
+    context,
+    "projectWelcome.openStartPage"
+  );
+
+  return resolvedUserShortcut ?? getDefaultOpenStartPageShortcut();
+}
+
+async function findConfiguredShortcutForCommand(
+  context: vscode.ExtensionContext,
+  commandId: string
+): Promise<string | undefined> {
+  const keybindingsPath = await resolveActiveProfileKeybindingsPath(context);
+  if (!keybindingsPath) {
+    return undefined;
+  }
+
+  try {
+    const raw = await fs.readFile(keybindingsPath, "utf8");
+    const parsed = JSON.parse(stripJsonComments(raw)) as Array<{
+      key?: string;
+      command?: string;
+    }>;
+
+    let resolved: string | undefined;
+    for (const entry of parsed) {
+      if (!entry || typeof entry.command !== "string") {
+        continue;
+      }
+
+      if (entry.command === `-${commandId}`) {
+        resolved = "deaktiviert";
+        continue;
+      }
+
+      if (entry.command === commandId && typeof entry.key === "string" && entry.key.trim()) {
+        resolved = formatShortcutLabel(entry.key);
+      }
+    }
+
+    return resolved;
+  } catch {
+    return undefined;
+  }
+}
+
+async function resolveActiveProfileKeybindingsPath(
+  context: vscode.ExtensionContext
+): Promise<string | undefined> {
+  const userDir = path.resolve(context.globalStorageUri.fsPath, "..", "..");
+  const defaultKeybindingsPath = path.join(userDir, "keybindings.json");
+  const storagePath = path.join(userDir, "globalStorage", "storage.json");
+
+  try {
+    const raw = await fs.readFile(storagePath, "utf8");
+    const storage = JSON.parse(raw) as {
+      profileAssociations?: {
+        workspaces?: Record<string, string>;
+        emptyWindows?: Record<string, string>;
+      };
+      userDataProfiles?: Array<{ location?: string; name?: string }>;
+    };
+
+    const workspaceKey = getCurrentWorkspaceAssociationKey();
+    if (!workspaceKey) {
+      return defaultKeybindingsPath;
+    }
+
+    const profileId = storage.profileAssociations?.workspaces?.[workspaceKey];
+    if (!profileId || profileId === "__default__profile__") {
+      return defaultKeybindingsPath;
+    }
+
+    const knownProfile = storage.userDataProfiles?.some((profile) => profile.location === profileId);
+    if (!knownProfile) {
+      return defaultKeybindingsPath;
+    }
+
+    return path.join(userDir, "profiles", profileId, "keybindings.json");
+  } catch {
+    return defaultKeybindingsPath;
+  }
+}
+
+function getCurrentWorkspaceAssociationKey(): string | undefined {
+  if (vscode.workspace.workspaceFile) {
+    return vscode.workspace.workspaceFile.toString();
+  }
+
+  if (vscode.workspace.workspaceFolders?.length) {
+    return vscode.workspace.workspaceFolders[0].uri.toString();
+  }
+
+  return undefined;
+}
+
+function stripJsonComments(value: string): string {
+  return value
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .replace(/^\s*\/\/.*$/gm, "");
+}
+
+function getDefaultOpenStartPageShortcut(): string {
+  return process.platform === "darwin" ? "Shift+F1" : "Shift+F1";
+}
+
+function formatShortcutLabel(shortcut: string): string {
+  return shortcut
+    .split(" ")
+    .map((part) => part
+      .split("+")
+      .map((segment) => formatShortcutSegment(segment))
+      .join("+"))
+    .join(" then ");
+}
+
+function formatShortcutSegment(segment: string): string {
+  const normalized = segment.trim();
+  if (!normalized) {
+    return normalized;
+  }
+
+  const lower = normalized.toLowerCase();
+  const replacements: Record<string, string> = {
+    cmd: "Cmd",
+    ctrl: "Ctrl",
+    shift: "Shift",
+    alt: "Alt",
+    option: "Option",
+    meta: "Meta"
+  };
+
+  if (replacements[lower]) {
+    return replacements[lower];
+  }
+
+  if (/^\[[^\]]+\]$/.test(normalized)) {
+    return normalized.slice(1, -1);
+  }
+
+  if (/^f\d+$/i.test(normalized)) {
+    return normalized.toUpperCase();
+  }
+
+  if (normalized.length === 1) {
+    return normalized.toUpperCase();
+  }
+
+  return normalized.charAt(0).toUpperCase() + normalized.slice(1);
 }
 
 async function setOpenOnStartupSetting(enabled: boolean): Promise<void> {

@@ -43,7 +43,7 @@ jobs:
           if-no-files-found: error
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           body_path: ${{ steps.changelog.outputs.release_notes_path }}
           files: artifacts/vsix/*.vsix

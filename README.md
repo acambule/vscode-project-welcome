@@ -83,6 +83,30 @@ Das Skript:
 
 Die erzeugte Datei kann anschliessend in VS Code ueber `Extensions: Install from VSIX...` installiert werden.
 
+Wichtig fuer Profile:
+
+- `Apply Extension to all Profiles` ist eine VS Code Profil-Zuordnung und kein eigener Update-Mechanismus fuer spaetere lokale VSIX-Installationen.
+- Bei einer Installation aus einer `.vsix` wird die Extension zwar aktualisiert, aber die Profil-Zuordnung solltest du fuer reproduzierbare lokale Tests explizit mitinstallieren.
+- VS Code deaktiviert bei VSIX-Installationen ausserdem standardmaessig Auto-Updates fuer diese Extension.
+
+Fuer ein gezieltes Update in mehrere Profile gibt es ein Helfer-Skript:
+
+```bash
+npm run install:vsix -- --profile "Frontend" --profile "Backend"
+```
+
+Optional kannst du ein anderes VS Code CLI Binary angeben:
+
+```bash
+npm run install:vsix -- --cli code-insiders --profile "Frontend"
+```
+
+Das Skript:
+
+- baut und paketiert zuerst die lokale VSIX
+- installiert sie einmal in die lokale VS Code Installation
+- installiert beziehungsweise aktualisiert sie danach zusaetzlich in allen angegebenen Profilen
+
 ## Rolling VSIX Build On Main
 
 Bei jedem Push auf `main` erzeugt GitHub Actions automatisch eine Rolling-VSIX, laedt sie als Workflow-Artefakt hoch und aktualisiert zusaetzlich ein festes GitHub Pre-Release fuer Testzwecke.

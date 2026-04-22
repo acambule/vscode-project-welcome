@@ -37,7 +37,7 @@ jobs:
           if-no-files-found: error
 
       - name: Update rolling pre-release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: rolling
           name: Rolling Build
