@@ -551,11 +551,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     })
   );
 
-  if (
-    vscode.workspace.getConfiguration("projectWelcome").get<boolean>("openOnStartup", true)
-    && !hasStartPageTabOpen()
-  ) {
-    panelRef.current = createOrRevealStartPage(panelRef, context, store, true);
+  if (vscode.workspace.getConfiguration("projectWelcome").get<boolean>("openOnStartup", true)) {
+    void openStartPageOnStartup(panelRef, context, store);
   }
 }
 
@@ -882,6 +879,7 @@ async function openProject(store: ProjectStore, id: string): Promise<void> {
   }
 
   const target = vscode.Uri.file(record.project.targetPath);
+  await closeStartPageTabs();
   await vscode.commands.executeCommand("vscode.openFolder", target, false);
 }
 
@@ -2361,23 +2359,28 @@ async function findConfiguredShortcutForCommand(
       command?: string;
     }>;
 
-    let resolved: string | undefined;
+    let resolvedShortcut: string | undefined;
+    let isDisabled = false;
     for (const entry of parsed) {
       if (!entry || typeof entry.command !== "string") {
         continue;
       }
 
       if (entry.command === `-${commandId}`) {
-        resolved = "deaktiviert";
+        isDisabled = true;
         continue;
       }
 
       if (entry.command === commandId && typeof entry.key === "string" && entry.key.trim()) {
-        resolved = formatShortcutLabel(entry.key);
+        resolvedShortcut = formatShortcutLabel(entry.key);
       }
     }
 
-    return resolved;
+    if (resolvedShortcut) {
+      return resolvedShortcut;
+    }
+
+    return isDisabled ? "deaktiviert" : undefined;
   } catch {
     return undefined;
   }
@@ -2599,6 +2602,7 @@ async function openTargetPath(targetPath: string, targetType: RecentTargetType):
     return;
   }
 
+  await closeStartPageTabs();
   await vscode.commands.executeCommand("vscode.openFolder", target, false);
 }
 
@@ -2625,6 +2629,36 @@ async function executeStartAction(action: StartActionType): Promise<void> {
     default:
       break;
   }
+}
+
+async function openStartPageOnStartup(
+  panelRef: { current: vscode.WebviewPanel | undefined },
+  context: vscode.ExtensionContext,
+  store: ProjectStore
+): Promise<void> {
+  await delay(350);
+
+  if (panelRef.current || hasStartPageTabOpen()) {
+    return;
+  }
+
+  panelRef.current = createOrRevealStartPage(panelRef, context, store, true);
+}
+
+async function closeStartPageTabs(): Promise<void> {
+  const tabs = getStartPageTabs();
+  if (!tabs.length) {
+    return;
+  }
+
+  await vscode.window.tabGroups.close(tabs, true);
+}
+
+function getStartPageTabs(): vscode.Tab[] {
+  return vscode.window.tabGroups.all.flatMap((group) => group.tabs.filter((tab) => {
+    const input = tab.input;
+    return input instanceof vscode.TabInputWebview && input.viewType === startPageViewType;
+  }));
 }
 
 function delay(milliseconds: number): Promise<void> {
