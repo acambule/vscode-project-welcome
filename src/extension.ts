@@ -56,6 +56,15 @@ interface ExtensionUiMeta {
 const startPageViewType = "projectWelcome.startPage";
 const startPageOpenStateKey = "projectWelcome.startPageOpen";
 
+function logProjectWelcome(message: string, details?: Record<string, unknown>): void {
+  if (details) {
+    console.log(`[projectWelcome] ${message}`, details);
+    return;
+  }
+
+  console.log(`[projectWelcome] ${message}`);
+}
+
 class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
   public static readonly viewType = "projectWelcome.projects";
 
@@ -361,7 +370,7 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
 <body>
   <div class="shell">
     <section class="actions">
-      <button id="openStartPage" class="accent">Als Startseite oeffnen</button>
+      <button id="openStartPage" class="accent">Als Startseite öffnen</button>
       <button id="create">Neues Projekt</button>
       <button id="createGroup" class="secondary">Neue Gruppe</button>
       <button id="backup" class="secondary">Backup</button>
@@ -526,6 +535,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   const provider = new ProjectsWelcomeViewProvider(context, context.extensionUri, store);
   const panelRef: { current: vscode.WebviewPanel | undefined } = { current: undefined };
   let isReconcilingStartPageTabs = false;
+
+  logProjectWelcome("activate", {
+    workspaceFile: vscode.workspace.workspaceFile?.toString() ?? null,
+    workspaceFolders: vscode.workspace.workspaceFolders?.map((folder) => folder.uri.toString()) ?? [],
+    openOnStartup: vscode.workspace.getConfiguration("projectWelcome").get<boolean>("openOnStartup", true),
+    shouldOpenOnStartup: shouldOpenStartPageOnStartup()
+  });
 
   context.subscriptions.push(
     vscode.window.registerWebviewViewProvider(ProjectsWelcomeViewProvider.viewType, provider)
@@ -806,11 +822,11 @@ function normalizePath(targetPath: string): string {
 async function pickTargetType(current?: ProjectTargetType): Promise<ProjectTargetType | undefined> {
   const selection = await vscode.window.showQuickPick(
     [
-      { label: "Ordner", value: "folder" as const, description: "Beliebigen Projektordner oeffnen" },
-      { label: "Workspace", value: "workspace" as const, description: ".code-workspace Datei oeffnen" }
+      { label: "Ordner", value: "folder" as const, description: "Beliebigen Projektordner öffnen" },
+      { label: "Workspace", value: "workspace" as const, description: ".code-workspace Datei öffnen" }
     ],
     {
-      title: "Welcher Projekttyp soll geoeffnet werden?",
+      title: "Welcher Projekttyp soll geöffnet werden?",
       ignoreFocusOut: true,
       placeHolder: current === "workspace" ? "Workspace" : "Ordner"
     }
@@ -893,10 +909,16 @@ async function openProject(store: ProjectStore, id: string): Promise<void> {
   const record = await findProject(store, id);
   if (!record) {
     void vscode.window.showErrorMessage("Projekt wurde nicht gefunden.");
+    logProjectWelcome("openProject: missing project", { id });
     return;
   }
 
   const target = vscode.Uri.file(record.project.targetPath);
+  logProjectWelcome("openProject: opening target", {
+    id,
+    targetPath: record.project.targetPath,
+    targetType: record.project.targetType
+  });
   await closeStartPageTabs();
   await vscode.commands.executeCommand("vscode.openFolder", target, false);
 }
@@ -2450,13 +2472,22 @@ async function resolveActiveProfileKeybindingsPath(
 
 function getCurrentWorkspaceAssociationKey(): string | undefined {
   if (vscode.workspace.workspaceFile) {
-    return vscode.workspace.workspaceFile.toString();
+    const workspaceKey = vscode.workspace.workspaceFile.toString();
+    logProjectWelcome("workspace association key from workspaceFile", { workspaceKey });
+    return workspaceKey;
   }
 
   if (vscode.workspace.workspaceFolders?.length) {
-    return vscode.workspace.workspaceFolders[0].uri.toString();
+    const firstFolder = vscode.workspace.workspaceFolders[0];
+    const workspaceKey = firstFolder?.uri?.toString();
+    logProjectWelcome("workspace association key from workspaceFolders", {
+      workspaceFolderCount: vscode.workspace.workspaceFolders.length,
+      workspaceKey: workspaceKey ?? null
+    });
+    return workspaceKey;
   }
 
+  logProjectWelcome("workspace association key unavailable");
   return undefined;
 }
 
@@ -2622,10 +2653,12 @@ function getBaseName(targetPath: string): string {
 async function openTargetPath(targetPath: string, targetType: RecentTargetType): Promise<void> {
   const target = vscode.Uri.file(targetPath);
   if (targetType === "file") {
+    logProjectWelcome("openTargetPath: opening file", { targetPath });
     await vscode.commands.executeCommand("vscode.open", target);
     return;
   }
 
+  logProjectWelcome("openTargetPath: opening folder/workspace", { targetPath, targetType });
   await closeStartPageTabs();
   await vscode.commands.executeCommand("vscode.openFolder", target, false);
 }
@@ -2661,21 +2694,32 @@ async function openStartPageOnStartup(
   store: ProjectStore
 ): Promise<void> {
   const wasOpenPreviously = context.workspaceState.get<boolean>(startPageOpenStateKey, false);
+  logProjectWelcome("openStartPageOnStartup: scheduled", {
+    wasOpenPreviously,
+    delayMs: wasOpenPreviously ? 1600 : 350
+  });
   await delay(wasOpenPreviously ? 1600 : 350);
 
   if (panelRef.current || hasStartPageTabOpen()) {
+    logProjectWelcome("openStartPageOnStartup: skipped", {
+      panelRefPresent: Boolean(panelRef.current),
+      openTabCount: getStartPageTabs().length
+    });
     return;
   }
 
+  logProjectWelcome("openStartPageOnStartup: creating start page");
   panelRef.current = createOrRevealStartPage(panelRef, context, store, true);
 }
 
 async function closeStartPageTabs(): Promise<void> {
   const tabs = getStartPageTabs();
   if (!tabs.length) {
+    logProjectWelcome("closeStartPageTabs: no tabs to close");
     return;
   }
 
+  logProjectWelcome("closeStartPageTabs: closing tabs", { count: tabs.length });
   await vscode.window.tabGroups.close(tabs, true);
 }
 
@@ -2710,6 +2754,10 @@ async function reconcileStartPageTabs(
     return;
   }
 
+  logProjectWelcome("reconcileStartPageTabs: duplicate tabs detected", {
+    count: tabs.length,
+    activeCount: tabs.filter((tab) => tab.isActive).length
+  });
   setReconciling(true);
 
   try {

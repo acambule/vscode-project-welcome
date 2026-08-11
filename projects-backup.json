@@ -1,0 +1,117 @@
+{
+  "version": 2,
+  "groups": [
+    {
+      "id": "group-1776686240522-yyo8reyz",
+      "name": "CAMEDIA",
+      "createdAt": "2026-04-20T11:57:20.522Z",
+      "updatedAt": "2026-04-30T12:48:11.449Z",
+      "projects": [
+        {
+          "id": "1776687061288-trri8oxs",
+          "name": "Dokumente",
+          "description": "",
+          "targetType": "folder",
+          "targetPath": "/mnt/Workspace/WORKSPACE/projects/#documents",
+          "createdAt": "2026-04-20T12:11:01.288Z",
+          "updatedAt": "2026-04-20T12:13:13.606Z"
+        },
+        {
+          "id": "1776687057851-8yq6w1l4",
+          "name": "CAMEDIA Agency",
+          "description": "Beschreibung",
+          "targetType": "folder",
+          "targetPath": "/mnt/Workspace/WORKSPACE/projects/camedia-agency",
+          "createdAt": "2026-04-20T12:10:57.851Z",
+          "updatedAt": "2026-04-30T12:48:11.449Z"
+        }
+      ]
+    },
+    {
+      "id": "group-1777795327675-v2fofucf",
+      "name": "CAMEDIA SERVER",
+      "createdAt": "2026-05-03T08:02:07.675Z",
+      "updatedAt": "2026-05-06T06:35:25.128Z",
+      "projects": [
+        {
+          "id": "1777795607550-fffwz5ra",
+          "name": "core.camedia",
+          "description": "Infrastructure Hetzner Server",
+          "targetType": "workspace",
+          "targetPath": "/mnt/Workspace/WORKSPACE/projects/#vscode-workspaces/core.camedia.code-workspace",
+          "createdAt": "2026-05-03T08:06:47.550Z",
+          "updatedAt": "2026-05-06T06:35:25.128Z"
+        }
+      ]
+    },
+    {
+      "id": "group-1776686246105-vg0tx3bs",
+      "name": "PRIVAT",
+      "createdAt": "2026-04-20T11:57:26.105Z",
+      "updatedAt": "2026-05-06T06:34:26.715Z",
+      "projects": [
+        {
+          "id": "1776687067407-yzw4cua3",
+          "name": "VSCode Projects Welcome",
+          "description": "",
+          "targetType": "folder",
+          "targetPath": "/mnt/Workspace/WORKSPACE/projects/vsc-projects",
+          "createdAt": "2026-04-20T12:11:07.407Z",
+          "updatedAt": "2026-04-20T12:12:28.678Z"
+        },
+        {
+          "id": "1776687065095-iu5kczea",
+          "name": "Tablion",
+          "description": "Linux Tabbed File Explorer",
+          "targetType": "folder",
+          "targetPath": "/mnt/Workspace/WORKSPACE/projects/tablion-filemanager",
+          "createdAt": "2026-04-20T12:11:05.095Z",
+          "updatedAt": "2026-05-06T06:34:26.715Z"
+        },
+        {
+          "id": "1776687090335-qa23r6wd",
+          "name": "Rezepte",
+          "description": "",
+          "targetType": "folder",
+          "targetPath": "/home/antonio/Dropbox/0.PRIVATE/# Essen/Rezepte",
+          "createdAt": "2026-04-20T12:11:30.335Z",
+          "updatedAt": "2026-04-20T12:11:30.335Z"
+        }
+      ]
+    },
+    {
+      "id": "group-1776686250545-5ilaoqb9",
+      "name": "KUNDEN",
+      "createdAt": "2026-04-20T11:57:30.545Z",
+      "updatedAt": "2026-04-20T12:11:53.871Z",
+      "projects": [
+        {
+          "id": "1776687086807-47rn4a7u",
+          "name": "WC Camps",
+          "description": "Hagerhof Bestellungen",
+          "targetType": "folder",
+          "targetPath": "/mnt/Workspace/WORKSPACE/wordpress/basketballcamps/app/public",
+          "createdAt": "2026-04-20T12:11:26.807Z",
+          "updatedAt": "2026-04-20T12:11:53.871Z"
+        }
+      ]
+    },
+    {
+      "id": "group-1777739011063-sh2nxitu",
+      "name": "Virtual Office",
+      "createdAt": "2026-05-02T16:23:31.063Z",
+      "updatedAt": "2026-05-02T16:24:15.405Z",
+      "projects": [
+        {
+          "id": "1777739055405-vx2b2k9f",
+          "name": "office.camedia.tools",
+          "description": "WorkAdventure",
+          "targetType": "workspace",
+          "targetPath": "/mnt/Workspace/WORKSPACE/projects/office.camedia.tools/office.camedia.tools.code-workspace",
+          "createdAt": "2026-05-02T16:24:15.405Z",
+          "updatedAt": "2026-05-02T16:24:15.405Z"
+        }
+      ]
+    }
+  ]
+}
