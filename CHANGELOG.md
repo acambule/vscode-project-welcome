@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on Keep a Changelog and follows semantic versioning.
 
+## [1.0.12] - 2026-11-14
+
+### Added
+
+- Start page as a webview panel, optionally opened automatically on startup, with tab reconciliation
+- Optional keyboard shortcut for opening the Welcome Page (`projectWelcome.enableOpenStartPageKeybinding`)
+- Layout selection for the Welcome Page (`projectWelcome.layout`)
+- Deleting empty project groups from the start page
+- Install script for VSIX profiles (`npm run install:vsix`)
+
+### Changed
+
+- Publisher name normalized in `package.json`
+- README updated and project backup JSON added
+- `action-gh-release` updated to v3
+
 ## [1.0.4] - 2026-04-20
 
 ### Fixed
