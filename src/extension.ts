@@ -11,6 +11,7 @@ type WebviewRequest =
   | { type: "createProject"; groupId?: string }
   | { type: "createGroup" }
   | { type: "renameGroup"; groupId: string }
+  | { type: "deleteGroup"; groupId: string }
   | { type: "updateGroups"; groups: ProjectGroup[] }
   | { type: "editProject"; id: string }
   | { type: "deleteProject"; id: string }
@@ -124,6 +125,10 @@ class ProjectsWelcomeViewProvider implements vscode.WebviewViewProvider {
         break;
       case "renameGroup":
         await renameGroup(this.store, message.groupId);
+        await this.postProjects();
+        break;
+      case "deleteGroup":
+        await deleteGroup(this.store, message.groupId);
         await this.postProjects();
         break;
       case "updateGroups":
@@ -660,6 +665,33 @@ async function renameGroup(store: ProjectStore, groupId: string): Promise<void> 
   )));
 }
 
+async function deleteGroup(store: ProjectStore, groupId: string): Promise<void> {
+  const groups = await store.listGroups();
+  const existing = groups.find((group) => group.id === groupId);
+  if (!existing) {
+    return;
+  }
+
+  if (existing.projects.length > 0) {
+    void vscode.window.showWarningMessage(
+      `Gruppe "${existing.name}" enthaelt noch Projekte und kann nur geloescht werden, wenn sie leer ist.`
+    );
+    return;
+  }
+
+  const confirmation = await vscode.window.showWarningMessage(
+    `Leere Gruppe "${existing.name}" wirklich loeschen?`,
+    { modal: true },
+    "Loeschen"
+  );
+
+  if (confirmation !== "Loeschen") {
+    return;
+  }
+
+  await store.saveGroups(groups.filter((group) => group.id !== groupId));
+}
+
 async function importRecentAsProject(
   store: ProjectStore,
   label: string,
@@ -1058,6 +1090,10 @@ async function handleSharedMessage(
       break;
     case "renameGroup":
       await renameGroup(store, message.groupId);
+      await postProjectsToPanel(panel, context, store);
+      break;
+    case "deleteGroup":
+      await deleteGroup(store, message.groupId);
       await postProjectsToPanel(panel, context, store);
       break;
     case "updateGroups":
@@ -2059,6 +2095,17 @@ function getStartPageHtml(webview: vscode.Webview, extensionUri: vscode.Uri): st
         headerActions.className = "iconToolbar";
         headerActions.appendChild(createProjectButton);
         headerActions.appendChild(renameGroupButton);
+
+        if (group.projects.length === 0) {
+          const deleteGroupButton = document.createElement("button");
+          deleteGroupButton.className = "iconButton";
+          deleteGroupButton.innerHTML = '<span class="codicon codicon-trash" aria-hidden="true"></span>';
+          deleteGroupButton.title = "Leere Gruppe loeschen";
+          deleteGroupButton.addEventListener("click", () => {
+            vscode.postMessage({ type: "deleteGroup", groupId: group.id });
+          });
+          headerActions.appendChild(deleteGroupButton);
+        }
 
         header.appendChild(title);
         header.appendChild(headerActions);
